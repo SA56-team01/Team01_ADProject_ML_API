@@ -1,3 +1,5 @@
+# cSpell: disable
+
 # all necessary imports
 import numpy as np
 import pandas as pd
@@ -39,18 +41,19 @@ Get 5 seed tracks from user_history
 def get_seed_tracks(df, timestamp):
     
     # split date-time to individual parts
-    df['ts'] = df['ts'].apply(lambda x: convert_timestamp_to_nearest_min(x))
-    df['month'] = pd.DatetimeIndex(df["ts"]).month
-    df['weekday'] = pd.DatetimeIndex(df["ts"]).weekday
-    df['hour'] = pd.DatetimeIndex(df["ts"]).hour
-    df['min'] = pd.DatetimeIndex(df["ts"]).minute
+    df['timestamp'] = df['timestamp'].apply(lambda x: pd.to_datetime(x))
+    df['month'] = pd.DatetimeIndex(df["timestamp"]).month
+    df['weekday'] = pd.DatetimeIndex(df["timestamp"]).weekday
+    df['hour'] = pd.DatetimeIndex(df["timestamp"]).hour
+    df['min'] = pd.DatetimeIndex(df["timestamp"]).minute
     
     # Extract the month, weekday, and hour from the given timestamp
-    given_timestamp =  pd.to_datetime(timestamp)
-    given_month = given_timestamp.month()
+    # given_timestamp =  pd.to_datetime(timestamp)
+    given_timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+    given_month = given_timestamp.month
     given_weekday = given_timestamp.weekday()
-    given_hour = given_timestamp.hour()
-    given_minute = given_timestamp.minute()
+    given_hour = given_timestamp.hour
+    given_minute = given_timestamp.minute
 
     # Calculate the absolute time differences between the given timestamp and each row in the dataframe
     df['time_diff'] = (abs(df['month'] - given_month) + abs(df['weekday'] - given_weekday) + 
@@ -63,10 +66,10 @@ def get_seed_tracks(df, timestamp):
     closest_rows = df_sorted.head(5)
 
     # Remove created columns
-    columns = ['ts','month','weekday','hour','min','time_diff']
+    columns = ['month','weekday','hour','min','time_diff']
     df.drop(labels=columns,inplace=True,axis=1)
 
-    return closest_rows['track_id']
+    return closest_rows['spotify_track_id']
 
 '''
 Pre-process user listening history data
@@ -135,19 +138,23 @@ cur_request = array of current timestamp & location
 '''
 def predict_song_attributes(df, model, cur_request):
 
-    # Take the features to be predicted on
-    
+    # Take the location and time features predict on
+    track_attributes = ['danceability', 'energy', 'key', 'loudness', 'mode',
+                        'speechiness', 'acousticness', 'instrumentalness', 'liveness',
+                        'valence', 'tempo', 'time_signature']
+    predict_df = df.drop(labels=track_attributes, axis=1)
+
     # fit the data to the base model
-    model.partial_fit(df)
+    model.partial_fit(predict_df)
     
     # predict clusters for user data
-    y_means = model.predict(df)
+    y_means = model.predict(predict_df)
     
     # append clusters to user history
     df['clusters'] = y_means.astype(int)
 
     # predict cluster allocation for request
-    i = model.predict(cur_request)
+    i = model.predict(cur_request) # what format is this?
 
     # find average value given the predicted cluster
     cluster_data = df[df['clusters'] == i]
@@ -166,6 +173,10 @@ def form_recommendation(seed_tracks, track_attributes):
     # update with the min and max value for each attribute
 
     return 
+
+
+
+
 
 ### SUPPLEMENTARY METHODS ###
 '''
