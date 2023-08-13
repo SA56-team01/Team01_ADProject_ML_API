@@ -330,8 +330,13 @@ def fe_coordinates(df):
                                 (df['longitude'].apply(lambda x: x in label[1])))
     return df
 
+'''
+get seed genres for user with no user history data
+'''
+
 def get_seed_genres():
 
+    #spotify list of genres
     genres = ["acoustic", "afrobeat", "alt-rock", "alternative", "ambient", "anime",
                "black-metal", "bluegrass", "blues", "bossanova", "brazil", "breakbeat",
                 "british", "cantopop", "chicago-house", "children", "chill", "classical",
