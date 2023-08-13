@@ -1,6 +1,7 @@
 # cSpell: disable
 
 # all necessary imports
+import random
 import numpy as np
 import pandas as pd
 import re
@@ -328,3 +329,7 @@ def get_seed_genres():
                 "singer-songwriter", "ska", "sleep", "songwriter", "soul", "soundtracks",
                 "spanish", "study", "summer", "swedish", 
                 "synth-pop", "tango", "techno", "trance", "trip-hop", "turkish", "work-out", "world-music"]
+    
+    random_genres = random.sample(genres, 5)
+
+    return random_genres

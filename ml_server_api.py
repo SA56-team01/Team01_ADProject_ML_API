@@ -51,6 +51,7 @@ def predict_track_attributes():
     if len(userhistory_df) != 0: 
         seed_tracks = ml_model_api.get_seed_tracks(userhistory_df,currentTime)
     else:
+        seed_genres = ml_model_api.get_seed_genres()
 
     
     #preprocess data from user-history database
