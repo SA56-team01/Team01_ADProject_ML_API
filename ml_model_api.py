@@ -14,11 +14,12 @@ import spotipy
 import pickle
 from spotipy.oauth2 import SpotifyClientCredentials
 from itertools import product
+from functools import reduce
    
 # ENVRIONEMNT VARIABLES
 
-os.environ['SPOTIFY_CLIENT_ID'] = "da1739f3259c41d0b5012627bc33ded5"
-os.environ['SPOTIFY_CLIENT_SECRET'] = "4b8ca2d6dcd244aaa6e898b94c3b00c2"
+os.environ['SPOTIFY_CLIENT_ID'] = ""
+os.environ['SPOTIFY_CLIENT_SECRET'] = ""
 
 ### MAIN METHODS ###
 
@@ -181,13 +182,38 @@ Form JSON response with min/max values for track attributes with seed tracks
 '''
 def form_recommendation_with_seed_tracks(seed_tracks, track_attributes):
 
-    track_attributes_df = pd.DataFrame(average_values)
+    # drop the 'clusters' if exists
+    column_to_drop = 'clusters'
+    if column_to_drop in track_attributes.index:
+        track_attributes.drop(column_to_drop,inplace=True)
     
-    # adjust the track attribute target to follow spotify guideline
-    
-    # update with the min and max value for each attribute
+    # make empty dict for response
+    response_dict = {}
 
-    return 
+    # add limit and market attributes
+    response_dict['limit'] = 20
+    response_dict['marker'] = 'SG'
+    
+    #add seed tracks
+    delimiter = '%'
+    seed_tracks = reduce(lambda x, y: str(x) + delimiter + str(y), seed_tracks)
+    response_dict['seed_tracks'] = seed_tracks
+    
+    # transform each attribute to min/target/max
+    all_columns = track_attributes.index.tolist()
+    for col in all_columns:
+        # discrete_col = ['key','mode','time_signature'] # for now we do not predict for discrete variables        
+        continuous_col = (['danceability', 'energy','acousticness', 'instrumentalness',
+                        'liveness','loudness','speechiness', 'tempo', 'valence'])
+
+        if col in continuous_col:
+            # extract column value to be modified
+            value = track_attributes[col]
+
+            response_dict[f'min_{col}'] = f'{round(value % 1 * 0.95, 3)}'
+            response_dict[f'target_{col}'] = f'{round(value % 1, 3)}'
+            response_dict[f'max_{col}'] =  f'{round(value % 1 * 1.05, 3)}'
+    return response_dict
 
 
 ### SUPPLEMENTARY METHODS ###
