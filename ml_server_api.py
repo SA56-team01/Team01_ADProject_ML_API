@@ -23,31 +23,62 @@ def index():
 @app.route('/predictTrackAttributes', methods=['GET'])
 def predict_track_attributes():
 
+    # data = [
+    # {
+    #     "id": 1,
+    #     "userId": 1,
+    #     "latitude": 1.2929946056154933,
+    #     "longitude": 103.77659642580656,
+    #     "spotifyTrackId": "2zDt2TfQbxiSPjTVJTgbwz",
+    #     "timestamp": "2023-08-12 20:52:34"
+    # },
+    # {
+    #     "id": 2,
+    #     "userId": 1,
+    #     "latitude": 1.2929946056154933,
+    #     "longitude": 103.77659642580656,
+    #     "spotifyTrackId": "2zDt2TfQbxiSPjTVJTgbwz",
+    #     "timestamp": "2023-08-12 20:52:34"
+    # }
+    # ]
+    
+    # df_mock = pd.DataFrame(data)
+
     #get input from android call
     currentlatitude = request.args.get('latitude',type=float)
+    print(currentlatitude)
     currentlongitude = request.args.get('longitude', type=float)
-    userId = request.args.get('userid')
+    print(currentlongitude)
+    userId = request.args.get('userId')
+    print(userId)
 
     currentTime = request.args.get('time')
-    currentTime_str = datetime.strptime(currentTime,"%Y-%m-%d %H:%M:%S")  # type: ignore
+    #currentTime_str = datetime.strptime(currentTime,"%Y-%m-%d %H:%M:%S")  # type: ignore
 
     #call backend to get user-history given userid
     userhistoryURL = os.getenv("USER_HISTORY_URL")
-    #result = get(userhistoryURL + userId) # type: ignore
-    result = get(userhistoryURL) # type: ignore
+    result = get(userhistoryURL + userId)  
+    #result = get(userhistoryURL) # type: ignore
     jsonresult = json.loads(result.content)
-    #print(jsonresult)
+    print(jsonresult)
+
+
+    
 
     userhistory_df = pd.DataFrame([jsonresult])
-    print(userhistory_df)
+    #print(userhistory_df)
     
-    #ml_model_api.SpotifyOAuth()
+
+
+    ml_model_api.SpotifyOAuth()
     
     #get seed tracks
-    seed_tracks = ml_model_api.get_seed_tracks(userhistory_df,currentTime_str)
-    print(seed_tracks)
+   
+    seed_tracks = ml_model_api.get_seed_tracks(userhistory_df,currentTime)
 
+    preprocess_data = ml_model_api.preprocess_data(userhistory_df)
     
+    ready_data = ml_model_api.perform_FE(preprocess_data)
 
     #load the model
     #modelName =  os.getenv("MODEL_NAME")
@@ -55,60 +86,9 @@ def predict_track_attributes():
 
     #dataPrediction = accessModel.predict()
 
-
-    filejson = {"latitude" : currentlatitude,
-                "longitude" : currentlongitude,
-                "time": currentTime_str,
-                "userid" : userId}
     
-
-    
-    
-    # filejson = {"seeds_tracks":seed_tracks,
-    #             "min_acousticness" : min_accousticness,
-    #             "max_acousticness" : max_acousticness,
-    #             "target_acousticness" : target_acousticness,
-    #             "min_danceability" : min_danceability,
-    #             "max_danceability" : max_danceability,
-    #             "target_danceability": target_danceability,
-    #             "min_duration_ms" : min_duration_ms,
-    #             "max_duration_ms": max_duration_ms,
-    #             "target_duration_ms" : target_duration_ms,
-    #             "min_energy" : min_energy,
-    #             "max_energy" : max_energy,
-    #             "target_energy" : target_energy,
-    #             "min_instrumentalness" : min_instrumentalness,
-    #             "max_instrumentalness" : max_instrumentalness,
-    #             "target_instrumentalness" : target_instrumentalness,
-    #             "min_key" : min_key,
-    #             "max_key" : max_key,
-    #             "target_key" : target_key,
-    #             "min_liveness" : min_liveness,
-    #             "max_liveness" : max_liveness,
-    #             "target_liveness" : target_liveness,
-    #             "min_loudness" : min_loudness,
-    #             "max_loudness" : max_loudness,
-    #             "target_loudness" : target_loudness,
-    #             "min_mode" : min_mode,
-    #             "max_mode" : max_mode,
-    #             "target_mode" : target_mode,
-    #             "min_popularity" : min_popularity,
-    #             "max_popularity" : max_popularity,
-    #             "target_popularity" : target_popularity,
-    #             "min_speechiness" : min_speechiness,
-    #             "max_speechiness" : max_speechiness,
-    #             "target_speechiness" : target_speechiness,
-    #             "min_tempo" : min_tempo,
-    #             "max_tempo" : max_tempo,
-    #             "target_tempo" : target_tempo,
-    #             "min_time_signature" : min_time_signature,
-    #             "max_time_signature" : max_time_signature,
-    #             "target_time_signature" : target_time_signature,
-    #             "min_valence" : min_valence, 
-    #             "max_valence" : max_valence,
-    #             "target_valence" : target_valence}
-    
-    return jsonify(filejson)
+    preprocess_result = ready_data.to_dict(orient='records')
+    return json.dumps(preprocess_result)
 
 
 

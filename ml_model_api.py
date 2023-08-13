@@ -7,19 +7,14 @@ import re
 import json 
 import csv
 import os
-import datetime 
+from datetime import datetime 
 import time
 import requests
 import spotipy
 import pickle
 from spotipy.oauth2 import SpotifyClientCredentials
-from itertools import product
+import pickle
    
-# ENVRIONEMNT VARIABLES
-
-os.environ['SPOTIFY_CLIENT_ID'] = "da1739f3259c41d0b5012627bc33ded5"
-os.environ['SPOTIFY_CLIENT_SECRET'] = "4b8ca2d6dcd244aaa6e898b94c3b00c2"
-
 ### MAIN METHODS ###
 
 '''
@@ -29,6 +24,15 @@ def load_base_model():
     with open('model.pkl', 'rb') as file:
        model = pickle.load(file)
        return model
+    
+'''
+Set-up Spotfiy OAuth
+'''
+def SpotifyOAuth():
+    load_dotenv() #to load env file
+    sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+                    client_id="CLIENT_ID", 
+                    client_secret="CLIENT_SECRET"))
     
 '''
 Get 5 seed tracks from user_history
@@ -44,6 +48,8 @@ def get_seed_tracks(df, timestamp): # timestamp format '2021-11-02 12:32:59'
     
     # Extract the month, weekday, and hour from the given timestamp
     given_timestamp = datetime.datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+    
+    given_timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
     given_month = given_timestamp.month
     given_weekday = given_timestamp.weekday()
     given_hour = given_timestamp.hour
@@ -64,12 +70,14 @@ def get_seed_tracks(df, timestamp): # timestamp format '2021-11-02 12:32:59'
     df.drop(labels=columns,inplace=True,axis=1)
 
     return closest_rows['spotify_track_id'].tolist()
+    return closest_rows['spotifyTrackId']
 
 '''
 Pre-process user listening history data
 
 format: latitude // longitude // spotify_track_id // timestamp
 * drop id and userid columns if the intial data has it
+format: id // userid // latitude // longitude // spotifyTrackId // timestamp
 '''
 def preprocess_data(df):
 
@@ -87,18 +95,29 @@ def preprocess_data(df):
     
     # Get list of unique songs 
     track_list = df['spotify_track_id'].unique().tolist()
+    track_list = user_history['spotifyTrackId'].unique().tolist()
 
     # Get track attributes as dataframe
     track_features_df = getTrackAttributes(track_list, 100)
 
+    # Drop columns which are meta info about track features
+    track_features_df.drop(labels=['type','uri','track_href','analysis_url'], 
+                            axis=1, 
+                            inplace=True)
+    
+    
+
+    # Rename to match merged df naming convention
+    track_features_df.rename(columns={'id':'spotifyTrackId'}, inplace=True)
+    
     # Merge with main dataframe
     merged_df = pd.merge(left = df,
                     right = track_features_df,
-                    on='spotify_track_id',
+                    on='spotifyTrackId',
                     how='left')
     
     # Drop track_uri once merged
-    merged_df.drop(labels='spotify_track_id', inplace=True, axis=1)                    
+    merged_df.drop(labels='spotifyTrackId', inplace=True, axis=1)                    
     
     return merged_df
 
@@ -210,7 +229,10 @@ def getTrackAttributes(tracks, batch_size):
 
     # Get track features in batches and add to end of list
     for batch in track_batches:
-        batch_track_features = sp.audio_features(batch)
+        sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+                    client_id=os.getenv("CLIENT_ID"), 
+                    client_secret=os.getenv("CLIENT_SECRET")))
+        batch_track_features = sp.audio_features(batch) 
         track_features.extend(batch_track_features)
 
     track_features_df = pd.DataFrame(track_features)
@@ -228,8 +250,9 @@ def getTrackAttributes(tracks, batch_size):
 '''
 Convert timestamp to nearest minute
 '''
-def convert_timestamp_to_nearest_min(timestamp_str):
-    timestamp_obj = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+def convert_timestamp_to_nearest_min(timestamp):
+    timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    timestamp_obj = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
     new_format = "%Y-%m-%d %H:%M"
     formatted_timestamp = timestamp_obj.strftime(new_format)
     return formatted_timestamp
@@ -274,8 +297,9 @@ def fe_coordinates(df):
     # Generate all possible combinations of latitude and longitude interval labels
     possible_labels = list(product(lat_bins, lon_bins))
     
-    for label in possible_labels:
-        label_str = '{}_{}_{}_{}'.format(round(label[0].left, 2),round(label[0].right, 2), round(label[1].left, 2), round(label[1].right, 2))
-        df[label_str] = ((df['latitude'].apply(lambda x: x in label[0])) &
-                                (df['longitude'].apply(lambda x: x in label[1])))
-    return df
+    # Method to remove location
+    def remove_nana_from_location(df):
+        df.drop(df[df['location_fe'] == 'nan_nan'].index, inplace=True)
+    
+    # Remove location records with null value
+    remove_nana_from_location(df)
