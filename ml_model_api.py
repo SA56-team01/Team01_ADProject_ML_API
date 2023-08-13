@@ -180,6 +180,28 @@ def predict_song_attributes(df, cur_request):
     return average_values
 
 '''
+Predict song attributes using base model
+for user without listening  history
+'''
+def predict_song_attributes_without_user_history(cur_request):
+    # feature engineering for cur_request
+    request_df = perform_fe(cur_request)
+
+    # load model
+    model = load_base_model()
+
+    # predict cluster allocation for request
+    i = model.predict(request_df)
+
+    # if predicted cluster allocation exists inside user_history
+    # get average attributes value given the predicted cluster
+    base_model_prediction_df = pd.read_csv('base_model_cluster_prediction.csv')
+    average_values = base_model_prediction_df.iloc[i[0]]
+
+    # return predicted attributes
+    return average_values
+
+'''
 Form JSON response with min/max values for track attributes with seed tracks
 '''
 def form_recommendation_with_seed_tracks(seed_tracks, track_attributes):
