@@ -3,11 +3,10 @@ import os
 import pandas as pd
 
 from flask import Flask, request,jsonify
-import pickle
 from dotenv import load_dotenv
 from requests import get
 import ml_model_api
-from datetime import datetime
+
 
 
 app = Flask(__name__)
@@ -23,72 +22,52 @@ def index():
 @app.route('/predictTrackAttributes', methods=['GET'])
 def predict_track_attributes():
 
-    # data = [
-    # {
-    #     "id": 1,
-    #     "userId": 1,
-    #     "latitude": 1.2929946056154933,
-    #     "longitude": 103.77659642580656,
-    #     "spotifyTrackId": "2zDt2TfQbxiSPjTVJTgbwz",
-    #     "timestamp": "2023-08-12 20:52:34"
-    # },
-    # {
-    #     "id": 2,
-    #     "userId": 1,
-    #     "latitude": 1.2929946056154933,
-    #     "longitude": 103.77659642580656,
-    #     "spotifyTrackId": "2zDt2TfQbxiSPjTVJTgbwz",
-    #     "timestamp": "2023-08-12 20:52:34"
-    # }
-    # ]
-    
-    # df_mock = pd.DataFrame(data)
-
     #get input from android call
-    currentlatitude = request.args.get('latitude',type=float)
-    print(currentlatitude)
-    currentlongitude = request.args.get('longitude', type=float)
-    print(currentlongitude)
     userId = request.args.get('userId')
-    print(userId)
-
+    currentlatitude = request.args.get('latitude',type=float)
+    currentlongitude = request.args.get('longitude', type=float)
     currentTime = request.args.get('time')
-    #currentTime_str = datetime.strptime(currentTime,"%Y-%m-%d %H:%M:%S")  # type: ignore
+    
+    cur_request = {
+        'latitude':currentlatitude,
+        'longitude':currentlongitude,
+        'timestamp':[currentTime]
+    }
+    request_df = pd.DataFrame(cur_request)
 
     #call backend to get user-history given userid
     userhistoryURL = os.getenv("USER_HISTORY_URL")
-    result = get(userhistoryURL + userId)  
-    #result = get(userhistoryURL) # type: ignore
-    jsonresult = json.loads(result.content)
-    print(jsonresult)
+    response_result = get(userhistoryURL + userId)  
+    json_response = json.loads(response_result.content)
+    
+    #prepare user-history as dataframe from API response
+    userhistory_df = pd.DataFrame(json_response)
+    
+    if len(userhistory_df) != 0: 
+        print("The DataFrame is not empty.")
+        userhistory_df = userhistory_df.drop(columns=['id','userId'])
 
+    #get seed tracks / get seed genres
+    if len(userhistory_df) != 0: 
+        seed_tracks = ml_model_api.get_seed_tracks(userhistory_df,currentTime)
+    else:
 
     
+    #preprocess data from user-history database
+    if len(userhistory_df) != 0: 
+        preprocess_data = ml_model_api.preprocess_data(userhistory_df)
 
-    userhistory_df = pd.DataFrame([jsonresult])
-    #print(userhistory_df)
+    #perform feature engineering on preprocess-data
+    processed_data = ml_model_api.perform_fe(preprocess_data)
     
+    #average values prediction from ml model
+    average_values = ml_model_api.predict_song_attributes(processed_data, request_df)
 
-
-    ml_model_api.SpotifyOAuth()
+    #format result to be readable to return to android
+    final_prediction = ml_model_api.form_recommendation_with_seed_tracks(seed_tracks,average_values)
     
-    #get seed tracks
-   
-    seed_tracks = ml_model_api.get_seed_tracks(userhistory_df,currentTime)
-
-    preprocess_data = ml_model_api.preprocess_data(userhistory_df)
     
-    ready_data = ml_model_api.perform_FE(preprocess_data)
-
-    #load the model
-    #modelName =  os.getenv("MODEL_NAME")
-    #accessModel = pickle.load(open(modelName,'rb'))
-
-    #dataPrediction = accessModel.predict()
-
-    
-    preprocess_result = ready_data.to_dict(orient='records')
-    return json.dumps(preprocess_result)
+    return final_prediction
 
 
 
