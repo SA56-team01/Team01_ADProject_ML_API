@@ -18,8 +18,8 @@ from functools import reduce
    
 # ENVRIONEMNT VARIABLES
 
-os.environ['SPOTIFY_CLIENT_ID'] = "da1739f3259c41d0b5012627bc33ded5"
-os.environ['SPOTIFY_CLIENT_SECRET'] = "d5e0a24786d44dde8b7d7ec69d27e59a"
+os.environ['SPOTIFY_CLIENT_ID'] = ""
+os.environ['SPOTIFY_CLIENT_SECRET'] = ""
 
 ### MAIN METHODS ###
 
