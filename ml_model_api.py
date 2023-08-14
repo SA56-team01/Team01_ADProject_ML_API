@@ -224,15 +224,15 @@ def form_recommendation_with_seed_tracks(seed_tracks, track_attributes):
     response_dict['market'] = 'SG'
     
     #add seed tracks
-    delimiter = '%2C'
-    seed_tracks = reduce(lambda x, y: str(x) + delimiter + str(y), seed_tracks)
+    # delimiter = '%2C'
+    # seed_tracks = reduce(lambda x, y: str(x) + delimiter + str(y), seed_tracks)
     response_dict['seed_tracks'] = seed_tracks
     
     # transform each attribute to min/target/max
     all_columns = track_attributes.index.tolist()
     for col in all_columns:
         # discrete_col = ['key','mode','time_signature'] # for now we do not predict for discrete variables
-        # Remove prediction for 'instrumentalness' as mean value is very low <0.00
+        # do not predict for 'instrumentalness' as value is generally very low <0.00
         continuous_col = (['danceability', 'energy','acousticness',
                         'liveness','loudness','speechiness', 'tempo', 'valence'])
 
@@ -241,19 +241,67 @@ def form_recommendation_with_seed_tracks(seed_tracks, track_attributes):
             value = track_attributes[col]
             
             if col != 'tempo':
-                response_dict[f'min_{col}'] = f'{round(value % 1 * 0.95, 3)}'
+                # response_dict[f'min_{col}'] = f'{round(value % 1 * 0.95, 3)}'
                 response_dict[f'target_{col}'] = f'{round(value % 1, 3)}'
-                response_dict[f'max_{col}'] =  f'{round(value % 1 * 1.05, 3)}'
+                # response_dict[f'max_{col}'] =  f'{round(value % 1 * 1.05, 3)}'
             else:
-                response_dict[f'min_{col}'] = f'{round(value * 0.95)}'
+                # response_dict[f'min_{col}'] = f'{round(value * 0.95)}'
                 response_dict[f'target_{col}'] = f'{round(value)}'
-                response_dict[f'max_{col}'] =  f'{round(value * 1.05)}'
+                # response_dict[f'max_{col}'] =  f'{round(value * 1.05)}'
 
     return response_dict
 
+def get_recommended_tracks(predicted_track_attributes):
+    sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+                client_id=os.getenv("CLIENT_ID"), 
+                client_secret=os.getenv("CLIENT_SECRET")))
+    
+    # get recommendations using seed tracks
+    if 'seed_tracks' in predicted_track_attributes:
+        response = sp.recommendations(
+            seed_tracks= predicted_track_attributes['seed_tracks'],
+            country=predicted_track_attributes['market'],
+            limit=predicted_track_attributes['limit'],
+            target_danceability=predicted_track_attributes['target_danceability'],
+            target_energy=predicted_track_attributes['target_energy'],
+            target_loudness=predicted_track_attributes['target_loudness'],
+            target_speechiness=predicted_track_attributes['target_speechiness'],
+            target_acousticness=predicted_track_attributes['target_acousticness'],
+            target_liveness=predicted_track_attributes['target_liveness'],
+            target_valence=predicted_track_attributes['target_valence'],
+            target_tempo=predicted_track_attributes['target_tempo']
+        )
+    else:
+        # get recommendations using seed genre
+        response = sp.recommendations(
+            seed_genres= predicted_track_attributes['seed_genres'],
+            country=predicted_track_attributes['market'],
+            limit=predicted_track_attributes['limit'],
+            target_danceability=predicted_track_attributes['target_danceability'],
+            target_energy=predicted_track_attributes['target_energy'],
+            target_loudness=predicted_track_attributes['target_loudness'],
+            target_speechiness=predicted_track_attributes['target_speechiness'],
+            target_acousticness=predicted_track_attributes['target_acousticness'],
+            target_liveness=predicted_track_attributes['target_liveness'],
+            target_valence=predicted_track_attributes['target_valence'],
+            target_tempo=predicted_track_attributes['target_tempo']
+        )
+
+    # parse for track id in response
+    def search_for_tracks(response):
+        tracks = response['tracks']
+        # empty list
+        trackList = []
+
+        for track in tracks:
+            if 'spotify:track' in track['uri']:
+                trackList.append(track['uri'])
+        return trackList
+    
+    return search_for_tracks(response)
+
 
 ### SUPPLEMENTARY METHODS ###
-
 '''
 Get track attributes for all unique songs from spotify API
 '''
