@@ -17,11 +17,15 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from itertools import product
 from functools import reduce
 from dotenv import load_dotenv
+import boto3
+from botocore.exceptions import ClientError
    
 # ENVRIONEMNT VARIABLES
 load_dotenv()
-client_id = os.getenv("CLIENT_ID")
-client_secret = os.getenv("CLIENT_SECRET")
+#client_id = os.getenv("CLIENT_ID")
+#client_secret = os.getenv("CLIENT_SECRET")
+
+
 
 ### MAIN METHODS ###
 
@@ -253,10 +257,38 @@ def getTrackAttributes(tracks, batch_size):
     # Empty list to store track features
     track_features = [] 
 
+    #AWS
+    secret_name = "spotify"
+    region_name = "us-east-1"
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        # For a list of exceptions thrown, see
+        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+        raise e
+
+    # Decrypts secret using the associated KMS key.
+
+    Spotify_Client_ID = get_secret_value_response['Spotify_Client_ID']
+    Spotify_Client_Secret = get_secret_value_response['Spotify_Client_Secret']
+
+    # Your code goes here.
+    
+
     # SpotifyOAuth
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
-                client_id=os.getenv("CLIENT_ID"), 
-                client_secret=os.getenv("CLIENT_SECRET")))
+                client_id=Spotify_Client_ID, 
+                client_secret=Spotify_Client_Secret))
 
     # Get track features in batches and add to end of list
     for batch in track_batches:

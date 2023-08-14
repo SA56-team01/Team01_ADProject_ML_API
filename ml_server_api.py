@@ -7,10 +7,15 @@ from dotenv import load_dotenv
 from requests import get
 import ml_model_api
 
+import boto3
+from botocore.exceptions import ClientError
 
 app = Flask(__name__)
 
 load_dotenv()
+
+
+
 
 #default route with no direct purpose
 @app.route('/')
@@ -25,12 +30,12 @@ def predict_track_attributes():
     userId = request.args.get('userId')
     currentlatitude = request.args.get('latitude',type=float)
     currentlongitude = request.args.get('longitude', type=float)
-    currentTime = request.args.get('time')
+    currentTimestamp = request.args.get('timestamp')
     
     cur_request = {
         'latitude':currentlatitude,
         'longitude':currentlongitude,
-        'timestamp':[currentTime]
+        'timestamp':[currentTimestamp]
     }
     request_df = pd.DataFrame(cur_request)
 
@@ -48,7 +53,7 @@ def predict_track_attributes():
         userhistory_df = userhistory_df.drop(columns=['id','userId'])
 
         #get seed tracks 
-        seed_tracks = ml_model_api.get_seed_tracks(userhistory_df,currentTime)
+        seed_tracks = ml_model_api.get_seed_tracks(userhistory_df,currentTimestamp)
 
         #preprocess data from user-history database
         preprocess_data = ml_model_api.preprocess_data(userhistory_df)
