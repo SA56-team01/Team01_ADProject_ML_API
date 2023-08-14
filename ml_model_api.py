@@ -1,6 +1,7 @@
 # cSpell: disable
 
 # all necessary imports
+import random
 import numpy as np
 import pandas as pd
 import re
@@ -15,11 +16,12 @@ import pickle
 from spotipy.oauth2 import SpotifyClientCredentials
 from itertools import product
 from functools import reduce
+from dotenv import load_dotenv
    
 # ENVRIONEMNT VARIABLES
-
-os.environ['SPOTIFY_CLIENT_ID'] = ""
-os.environ['SPOTIFY_CLIENT_SECRET'] = ""
+load_dotenv()
+client_id = os.getenv("CLIENT_ID")
+client_secret = os.getenv("CLIENT_SECRET")
 
 ### MAIN METHODS ###
 
@@ -64,12 +66,12 @@ def get_seed_tracks(df, timestamp): # timestamp format '2021-11-02 12:32:59'
     columns = ['ts','month','weekday','hour','min','time_diff']
     df.drop(labels=columns,inplace=True,axis=1)
 
-    return closest_rows['spotify_track_id'].tolist()
+    return closest_rows['spotifyTrackId'].tolist()
 
 '''
 Pre-process user listening history data
 
-format: latitude // longitude // spotify_track_id // timestamp
+format: latitude // longitude // spotifyTrackId // timestamp
 * drop id and userid columns if the intial data has it
 '''
 def preprocess_data(df):
@@ -85,9 +87,9 @@ def preprocess_data(df):
     
     # convert timestamp to nearest minute
     df['timestamp'] = df['timestamp'].apply(lambda x: convert_timestamp_to_nearest_min(x))
-    
+    print(df.columns)
     # Get list of unique songs 
-    track_list = df['spotify_track_id'].unique().tolist()
+    track_list = df['spotifyTrackId'].unique().tolist()
 
     # Get track attributes as dataframe
     track_features_df = getTrackAttributes(track_list, 100)
@@ -95,11 +97,11 @@ def preprocess_data(df):
     # Merge with main dataframe
     merged_df = pd.merge(left = df,
                     right = track_features_df,
-                    on='spotify_track_id',
+                    on='spotifyTrackId',
                     how='left')
     
     # Drop track_uri once merged
-    merged_df.drop(labels='spotify_track_id', inplace=True, axis=1)                    
+    merged_df.drop(labels='spotifyTrackId', inplace=True, axis=1)                    
     
     return merged_df
 
@@ -217,7 +219,7 @@ def form_recommendation_with_seed_tracks(seed_tracks, track_attributes):
     response_dict['marker'] = 'SG'
     
     #add seed tracks
-    delimiter = '%'
+    delimiter = '%2C'
     seed_tracks = reduce(lambda x, y: str(x) + delimiter + str(y), seed_tracks)
     response_dict['seed_tracks'] = seed_tracks
     
@@ -253,8 +255,8 @@ def getTrackAttributes(tracks, batch_size):
 
     # SpotifyOAuth
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
-                client_id=os.environ['SPOTIFY_CLIENT_ID'], 
-                client_secret=os.environ['SPOTIFY_CLIENT_SECRET']))
+                client_id=os.getenv("CLIENT_ID"), 
+                client_secret=os.getenv("CLIENT_SECRET")))
 
     # Get track features in batches and add to end of list
     for batch in track_batches:
@@ -269,7 +271,7 @@ def getTrackAttributes(tracks, batch_size):
                             inplace=True)
 
     # Rename to match merged df naming convention
-    track_features_df.rename(columns={'id':'spotify_track_id'}, inplace=True)
+    track_features_df.rename(columns={'id':'spotifyTrackId'}, inplace=True)
 
     return track_features_df
 
@@ -327,3 +329,34 @@ def fe_coordinates(df):
         df[label_str] = ((df['latitude'].apply(lambda x: x in label[0])) &
                                 (df['longitude'].apply(lambda x: x in label[1])))
     return df
+
+'''
+get seed genres for user with no user history data
+'''
+
+def get_seed_genres():
+
+    #spotify list of genres
+    genres = ["acoustic", "afrobeat", "alt-rock", "alternative", "ambient", "anime",
+               "black-metal", "bluegrass", "blues", "bossanova", "brazil", "breakbeat",
+                "british", "cantopop", "chicago-house", "children", "chill", "classical",
+                "club", "comedy", "country", "dance", "dancehall", "death-metal", "deep-house",
+                "detroit-techno", "disco", "disney", "drum-and-bass", "dub", "dubstep", "edm",
+                "electro", "electronic", "emo", "folk", "forro", "french", "funk", "garage",
+                "german", "gospel", "goth", "grindcore", "groove", "grunge", "guitar",
+                "happy", "hard-rock", "hardcore", "hardstyle", "heavy-metal", "hip-hop",
+                "holidays", "honky-tonk", "house", "idm", "indian", "indie", "indie-pop",
+                "industrial", "iranian", "j-dance", "j-idol", "j-pop", "j-rock", "jazz", 
+                "k-pop", "kids", "latin", "latino", "malay", "mandopop", "metal", "metal-misc",
+                "metalcore", "minimal-techno", "movies", "mpb", "new-age", "new-release", "opera",
+                "pagode", "party", "philippines-opm", "piano", "pop", "pop-film", "post-dubstep",
+                "power-pop", "progressive-house", "psych-rock", "punk", "punk-rock", "r-n-b",
+                "rainy-day", "reggae", "reggaeton", "road-trip", "rock", "rock-n-roll",
+                "rockabilly", "romance", "sad", "salsa", "samba", "sertanejo", "show-tunes",
+                "singer-songwriter", "ska", "sleep", "songwriter", "soul", "soundtracks",
+                "spanish", "study", "summer", "swedish", 
+                "synth-pop", "tango", "techno", "trance", "trip-hop", "turkish", "work-out", "world-music"]
+    
+    random_genres = random.sample(genres, 5)
+
+    return random_genres
