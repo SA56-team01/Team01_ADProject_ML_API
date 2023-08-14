@@ -175,7 +175,12 @@ def predict_song_attributes(df, cur_request):
     else:
         base_model_prediction_df = pd.read_csv('base_model_cluster_prediction.csv')
         average_values = base_model_prediction_df.iloc[i[0]]
-
+    
+    # check if prediction has any null value
+    if average_values.hasnans:
+        base_model_prediction_df = pd.read_csv('base_model_cluster_prediction.csv')
+        average_values = base_model_prediction_df.iloc[i[0]]
+    
     # return predicted attributes
     return average_values
 
@@ -234,7 +239,7 @@ def form_recommendation_with_seed_tracks(seed_tracks, track_attributes):
         if col in continuous_col:
             # extract column value to be modified
             value = track_attributes[col]
-
+            
             if col != 'tempo':
                 response_dict[f'min_{col}'] = f'{round(value % 1 * 0.95, 3)}'
                 response_dict[f'target_{col}'] = f'{round(value % 1, 3)}'
