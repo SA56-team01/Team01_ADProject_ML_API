@@ -179,7 +179,12 @@ def predict_song_attributes(df, cur_request):
     else:
         base_model_prediction_df = pd.read_csv('base_model_cluster_prediction.csv')
         average_values = base_model_prediction_df.iloc[i[0]]
-
+    
+    # check if prediction has any null value
+    if average_values.hasnans:
+        base_model_prediction_df = pd.read_csv('base_model_cluster_prediction.csv')
+        average_values = base_model_prediction_df.iloc[i[0]]
+    
     # return predicted attributes
     return average_values
 
@@ -220,7 +225,7 @@ def form_recommendation_with_seed_tracks(seed_tracks, track_attributes):
 
     # add limit and market attributes
     response_dict['limit'] = 20
-    response_dict['marker'] = 'SG'
+    response_dict['market'] = 'SG'
     
     #add seed tracks
     delimiter = '%2C'
@@ -230,17 +235,24 @@ def form_recommendation_with_seed_tracks(seed_tracks, track_attributes):
     # transform each attribute to min/target/max
     all_columns = track_attributes.index.tolist()
     for col in all_columns:
-        # discrete_col = ['key','mode','time_signature'] # for now we do not predict for discrete variables        
-        continuous_col = (['danceability', 'energy','acousticness', 'instrumentalness',
+        # discrete_col = ['key','mode','time_signature'] # for now we do not predict for discrete variables
+        # Remove prediction for 'instrumentalness' as mean value is very low <0.00
+        continuous_col = (['danceability', 'energy','acousticness',
                         'liveness','loudness','speechiness', 'tempo', 'valence'])
 
         if col in continuous_col:
             # extract column value to be modified
             value = track_attributes[col]
+            
+            if col != 'tempo':
+                response_dict[f'min_{col}'] = f'{round(value % 1 * 0.95, 3)}'
+                response_dict[f'target_{col}'] = f'{round(value % 1, 3)}'
+                response_dict[f'max_{col}'] =  f'{round(value % 1 * 1.05, 3)}'
+            else:
+                response_dict[f'min_{col}'] = f'{round(value * 0.95)}'
+                response_dict[f'target_{col}'] = f'{round(value)}'
+                response_dict[f'max_{col}'] =  f'{round(value * 1.05)}'
 
-            response_dict[f'min_{col}'] = f'{round(value % 1 * 0.95, 3)}'
-            response_dict[f'target_{col}'] = f'{round(value % 1, 3)}'
-            response_dict[f'max_{col}'] =  f'{round(value % 1 * 1.05, 3)}'
     return response_dict
 
 
