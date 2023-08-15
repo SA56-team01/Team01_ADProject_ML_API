@@ -2,7 +2,7 @@ import json
 import os
 import pandas as pd
 
-from flask import Flask, request
+from flask import Flask, jsonify, request
 from dotenv import load_dotenv
 from requests import get
 import ml_model_api
@@ -35,9 +35,28 @@ def predict_track_attributes():
     request_df = pd.DataFrame(cur_request)
 
     #call backend to get user-history given userid
-    userhistoryURL = os.getenv("USER_HISTORY_URL")
-    response_result = get(userhistoryURL + userId)  
-    json_response = json.loads(response_result.content)
+    #userhistoryURL = os.getenv("USER_HISTORY_URL")
+    #response_result = get(userhistoryURL + userId)  
+    #json_response = json.loads(response_result.content)
+
+    json_response = [
+        {
+        "id": 1,
+        "userId": 1,
+        "latitude": 1.2929946056154933,
+        "longitude": 103.77659642580656,
+        "spotifyTrackId": "2zDt2TfQbxiSPjTVJTgbwz",
+        "timestamp": "2023-08-15 15:35:49"
+        },
+        {
+        "id": 2,
+        "userId": 1,
+        "latitude": 1.2929946056154933,
+        "longitude": 103.77659642580656,
+        "spotifyTrackId": "2zDt2TfQbxiSPjTVJTgbwz",
+        "timestamp": "2023-08-15 15:35:49"
+        }   
+    ]
     
     #prepare user-history as dataframe from API response
     userhistory_df = pd.DataFrame(json_response)
