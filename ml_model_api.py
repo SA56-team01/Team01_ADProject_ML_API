@@ -209,7 +209,7 @@ def predict_song_attributes_without_user_history(cur_request):
 '''
 Form JSON response with min/max values for track attributes with seed tracks
 '''
-def form_recommendation_with_seed_tracks(seed_tracks, track_attributes):
+def form_recommendation(seed_tracks, track_attributes):
 
     # drop the 'clusters' if exists
     column_to_drop = 'clusters'
@@ -255,7 +255,6 @@ def get_recommended_tracks(predicted_track_attributes):
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
                 client_id=os.getenv("CLIENT_ID"), 
                 client_secret=os.getenv("CLIENT_SECRET")))
-    
     # get recommendations using seed tracks
     if 'seed_tracks' in predicted_track_attributes:
         response = sp.recommendations(
@@ -271,8 +270,7 @@ def get_recommended_tracks(predicted_track_attributes):
             target_valence=predicted_track_attributes['target_valence'],
             target_tempo=predicted_track_attributes['target_tempo']
         )
-    else:
-        # get recommendations using seed genre
+    else: # get recommendations using seed genre
         response = sp.recommendations(
             seed_genres= predicted_track_attributes['seed_genres'],
             country=predicted_track_attributes['market'],
@@ -300,6 +298,20 @@ def get_recommended_tracks(predicted_track_attributes):
     
     return search_for_tracks(response)
 
+def form_response(pred_track_attr, rec_track_list):
+    
+    if 'seed_tracks' in pred_track_attr:
+        # get seed tracks and append 'spotify:track:' in front of each string
+        s='spotify:track:'
+        seed_tracks = (s + item for item in pred_track_attr['seed_tracks'])
+        
+        # append to recommendation
+        rec_track_list.extend(seed_tracks)
+    
+    #return final dict response
+    pred_track_attr['playlist_songs'] = rec_track_list
+    
+    return pred_track_attr
 
 ### SUPPLEMENTARY METHODS ###
 '''
