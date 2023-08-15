@@ -17,16 +17,12 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from itertools import product
 from functools import reduce
 from dotenv import load_dotenv
-import boto3
-from botocore.exceptions import ClientError
 import aws_credentials
    
 # ENVRIONEMNT VARIABLES
 load_dotenv()
 #client_id = os.getenv("CLIENT_ID")
 #client_secret = os.getenv("CLIENT_SECRET")
-
-
 
 ### MAIN METHODS ###
 
@@ -75,7 +71,6 @@ def get_seed_tracks(df, timestamp): # timestamp format '2021-11-02 12:32:59'
 
 '''
 Pre-process user listening history data
-
 format: latitude // longitude // spotifyTrackId // timestamp
 * drop id and userid columns if the intial data has it
 '''
@@ -229,15 +224,15 @@ def form_recommendation(seed_tracks, track_attributes):
     response_dict['market'] = 'SG'
     
     #add seed tracks
-    # delimiter = '%2C'
-    # seed_tracks = reduce(lambda x, y: str(x) + delimiter + str(y), seed_tracks)
+    #delimiter = '%2C'
+    #seed_tracks = reduce(lambda x, y: str(x) + delimiter + str(y), seed_tracks)
     response_dict['seed_tracks'] = seed_tracks
     
     # transform each attribute to min/target/max
     all_columns = track_attributes.index.tolist()
     for col in all_columns:
         # discrete_col = ['key','mode','time_signature'] # for now we do not predict for discrete variables
-        # do not predict for 'instrumentalness' as value is generally very low <0.00
+        # Remove prediction for 'instrumentalness' as mean value is very low <0.00
         continuous_col = (['danceability', 'energy','acousticness',
                         'liveness','loudness','speechiness', 'tempo', 'valence'])
 
@@ -246,20 +241,26 @@ def form_recommendation(seed_tracks, track_attributes):
             value = track_attributes[col]
             
             if col != 'tempo':
-                # response_dict[f'min_{col}'] = f'{round(value % 1 * 0.95, 3)}'
+                #response_dict[f'min_{col}'] = f'{round(value % 1 * 0.95, 3)}'
                 response_dict[f'target_{col}'] = f'{round(value % 1, 3)}'
-                # response_dict[f'max_{col}'] =  f'{round(value % 1 * 1.05, 3)}'
+                #response_dict[f'max_{col}'] =  f'{round(value % 1 * 1.05, 3)}'
             else:
-                # response_dict[f'min_{col}'] = f'{round(value * 0.95)}'
+                #response_dict[f'min_{col}'] = f'{round(value * 0.95)}'
                 response_dict[f'target_{col}'] = f'{round(value)}'
-                # response_dict[f'max_{col}'] =  f'{round(value * 1.05)}'
+                #response_dict[f'max_{col}'] =  f'{round(value * 1.05)}'
 
     return response_dict
 
 def get_recommended_tracks(predicted_track_attributes):
+    # sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+    #             client_id=os.getenv("CLIENT_ID"), 
+    #             client_secret=os.getenv("CLIENT_SECRET")))
+    
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
-                client_id=os.getenv("CLIENT_ID"), 
-                client_secret=os.getenv("CLIENT_SECRET")))
+                client_id=aws_credentials.get_spotify_id(), 
+                client_secret=aws_credentials.get_spotify_secrets()))
+    
+
     # get recommendations using seed tracks
     if 'seed_tracks' in predicted_track_attributes:
         response = sp.recommendations(
@@ -319,6 +320,7 @@ def form_response(pred_track_attr, rec_track_list):
     return pred_track_attr
 
 ### SUPPLEMENTARY METHODS ###
+
 '''
 Get track attributes for all unique songs from spotify API
 '''
@@ -330,7 +332,7 @@ def getTrackAttributes(tracks, batch_size):
     # Empty list to store track features
     track_features = [] 
     
-    # SpotifyOAuth, comment out the code below if using AWS
+    # SpotifyOAuth, use this code instead if try on local with key in.env
     # sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     #             client_id=os.getenv("CLIENT_ID"), 
     #             client_secret=os.getenv("CLIENT_SECRET")))

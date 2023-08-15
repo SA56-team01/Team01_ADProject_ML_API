@@ -1,8 +1,10 @@
 numpy
 pandas
 spotipy
-SpotifyClientCredentials
 boto3
 requests
-flask
+Flask
 scikit-learn
+boto3
+json
+tensorflow

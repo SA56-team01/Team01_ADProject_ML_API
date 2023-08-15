@@ -14,8 +14,8 @@ def get_secrets():
     secret_name = "Spotify"
     region_name = "ap-southeast-1"
 
-    os.environ["AWS_ACCESS_KEY_ID"] = "AKIATFYKLVQGEAXVEYXA"
-    os.environ["AWS_SECRET_ACCESS_KEY"] = "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"
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 
     # Create a Secrets Manager client
     session = boto3.session.Session()
