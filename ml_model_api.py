@@ -19,6 +19,7 @@ from functools import reduce
 from dotenv import load_dotenv
 import boto3
 from botocore.exceptions import ClientError
+import aws_credentials
    
 # ENVRIONEMNT VARIABLES
 load_dotenv()
@@ -91,7 +92,7 @@ def preprocess_data(df):
     
     # convert timestamp to nearest minute
     df['timestamp'] = df['timestamp'].apply(lambda x: convert_timestamp_to_nearest_min(x))
-    print(df.columns)
+    
     # Get list of unique songs 
     track_list = df['spotifyTrackId'].unique().tolist()
 
@@ -268,40 +269,17 @@ def getTrackAttributes(tracks, batch_size):
 
     # Empty list to store track features
     track_features = [] 
-
-    #AWS
-    secret_name = "spotify"
-    region_name = "us-east-1"
-
-    # Create a Secrets Manager client
-    session = boto3.session.Session()
-    client = session.client(
-        service_name='secretsmanager',
-        region_name=region_name
-    )
-
-    try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=secret_name
-        )
-    except ClientError as e:
-        # For a list of exceptions thrown, see
-        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
-        raise e
-
-    # Decrypts secret using the associated KMS key.
-
-    Spotify_Client_ID = get_secret_value_response['Spotify_Client_ID']
-    Spotify_Client_Secret = get_secret_value_response['Spotify_Client_Secret']
-
-    # Your code goes here.
+    
+    # SpotifyOAuth, comment out the code below if using AWS
+    # sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+    #             client_id=os.getenv("CLIENT_ID"), 
+    #             client_secret=os.getenv("CLIENT_SECRET")))
     
 
-    # SpotifyOAuth
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
-                client_id=Spotify_Client_ID, 
-                client_secret=Spotify_Client_Secret))
-
+                client_id=aws_credentials.get_spotify_id(), 
+                client_secret=aws_credentials.get_spotify_secrets()))
+    
     # Get track features in batches and add to end of list
     for batch in track_batches:
         batch_track_features = sp.audio_features(batch)
