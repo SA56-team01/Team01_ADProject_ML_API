@@ -6,5 +6,5 @@ requests
 Flask
 scikit-learn
 boto3
-json
 tensorflow
+python-dotenv
