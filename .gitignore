@@ -167,3 +167,9 @@ Training_Data/
 
 # DS_Store
 *DS_Store*
+
+# Local files
+.vscode/
+BackEndTest/
+baseModelv2.ipynb
+spotify_recommendation_JSON_sample.py
