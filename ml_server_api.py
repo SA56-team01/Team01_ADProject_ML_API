@@ -92,5 +92,5 @@ def predict_track_attributes():
 
 #starting the server on any host
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=5050)
+    app.run(host='0.0.0.0',port=5000)
             
