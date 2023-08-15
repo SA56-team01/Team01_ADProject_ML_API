@@ -23,13 +23,13 @@ def predict_track_attributes():
 
     #get input from android call
     userId = request.args.get('userId')
-    currentlatitude = request.args.get('latitude',type=float)
-    currentlongitude = request.args.get('longitude', type=float)
+    currentLatitude = request.args.get('latitude',type=float)
+    currentLongitude = request.args.get('longitude', type=float)
     currentTime = request.args.get('time')
     
     cur_request = {
-        'latitude':currentlatitude,
-        'longitude':currentlongitude,
+        'latitude':currentLatitude,
+        'longitude':currentLongitude,
         'timestamp':[currentTime]
     }
     request_df = pd.DataFrame(cur_request)
@@ -44,7 +44,7 @@ def predict_track_attributes():
     
     
     if len(userhistory_df) != 0: 
-        print("The DataFrame is not empty.")
+        # print("The DataFrame is not empty.")
         userhistory_df = userhistory_df.drop(columns=['id','userId'])
 
         #get seed tracks 
@@ -60,9 +60,7 @@ def predict_track_attributes():
         average_values = ml_model_api.predict_song_attributes(processed_data, request_df)
 
         #format result to be readable to return to android
-        final_prediction = ml_model_api.form_recommendation_with_seed_tracks(seed_tracks,average_values)
-    
-        return final_prediction
+        final_prediction = ml_model_api.form_recommendation(seed_tracks,average_values)
     
     else: 
         # if user_history is empty
@@ -71,16 +69,25 @@ def predict_track_attributes():
 
         average_values = ml_model_api.predict_song_attributes_without_user_history(request_df)
 
-        final_prediction = ml_model_api.form_recommendation_with_seed_tracks(seed_genres,average_values)
+        final_prediction = ml_model_api.form_recommendation(seed_genres,average_values)
 
         #change the key as we are using seed_genres instead of seed_tracks
         final_prediction['seed_genres'] = final_prediction.pop('seed_tracks')
-        
-        return final_prediction
 
+    # get recommended tracks based on predicted track attributes
+    rec_track_list = ml_model_api.get_recommended_tracks(final_prediction)
+    
+    # form final response
+    final_response = ml_model_api.form_response(final_prediction, rec_track_list) 
 
+    # add metadata about playlist creation
+    final_response['timestamp'] = currentTime
+    final_response['latitude'] = currentLatitude
+    final_response['longitude'] = currentLongitude
+
+    return final_response
 
 #starting the server on any host
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=5000)
+    app.run(host='0.0.0.0',port=5001)
             
