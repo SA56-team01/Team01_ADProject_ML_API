@@ -13,6 +13,7 @@ import time
 import requests
 import spotipy
 import pickle
+import re
 from spotipy.oauth2 import SpotifyClientCredentials
 from itertools import product
 from functools import reduce
@@ -321,6 +322,17 @@ def form_response(pred_track_attr, rec_track_list):
 
 ### SUPPLEMENTARY METHODS ###
 
+'''
+parse top tracks for seed_tracks
+'''
+def parse_top_tracks(input_string):    
+    pattern = r'(?<=spotify:track:)\w+'
+    matches = re.findall(pattern, input_string)
+
+    if len(matches) != 0:
+        return matches
+    else:
+        return 'null'
 '''
 Get track attributes for all unique songs from spotify API
 '''

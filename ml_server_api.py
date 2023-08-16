@@ -26,6 +26,7 @@ def predict_track_attributes():
     currentLatitude = request.args.get('latitude',type=float)
     currentLongitude = request.args.get('longitude', type=float)
     currentTimestamp = request.args.get('timestamp')
+    top_tracks = request.args.get('top_tracks')
     
     cur_request = {
         'latitude':currentLatitude,
@@ -61,7 +62,6 @@ def predict_track_attributes():
     #prepare user-history as dataframe from API response
     userhistory_df = pd.DataFrame(json_response)
     
-    
     if len(userhistory_df) != 0: 
         # print("The DataFrame is not empty.")
         userhistory_df = userhistory_df.drop(columns=['id','userId'])
@@ -81,18 +81,24 @@ def predict_track_attributes():
         #format result to be readable to return to android
         final_prediction = ml_model_api.form_recommendation(seed_tracks,average_values)
         
-    else: 
-        # if user_history is empty
-        # use seed_genres instead
-        seed_genres = ml_model_api.get_seed_genres()
-
-        average_values = ml_model_api.predict_song_attributes_without_user_history(request_df)
-
-        final_prediction = ml_model_api.form_recommendation(seed_genres,average_values)
-
-        #change the key as we are using seed_genres instead of seed_tracks
-        final_prediction['seed_genres'] = final_prediction.pop('seed_tracks')
+    else: # if user_history is empty
+        #get seed tracks from user top tracks
+        seed_tracks = ml_model_api.parse_top_tracks(top_tracks)        
+        if seed_tracks != 'null':
+            average_values = ml_model_api.predict_song_attributes_without_user_history(request_df)
+            final_prediction = ml_model_api.form_recommendation(seed_tracks,average_values)
         
+        # if no top_tracks or seed tracks, use random genre
+        else:
+            seed_genres = ml_model_api.get_seed_genres()
+
+            average_values = ml_model_api.predict_song_attributes_without_user_history(request_df)
+
+            final_prediction = ml_model_api.form_recommendation(seed_genres,average_values)
+
+            #change the key as we are using seed_genres instead of seed_tracks
+            final_prediction['seed_genres'] = final_prediction.pop('seed_tracks')
+
     # get recommended tracks based on predicted track attributes
     rec_track_list = ml_model_api.get_recommended_tracks(final_prediction)
     
