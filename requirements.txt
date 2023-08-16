@@ -1,0 +1,10 @@
+numpy
+pandas
+spotipy
+boto3
+requests
+Flask
+scikit-learn
+boto3
+tensorflow
+python-dotenv
