@@ -22,8 +22,7 @@ import aws_credentials
    
 # ENVRIONEMNT VARIABLES
 load_dotenv()
-#client_id = os.getenv("CLIENT_ID")
-#client_secret = os.getenv("CLIENT_SECRET")
+
 
 ### MAIN METHODS ###
 
@@ -253,10 +252,12 @@ def form_recommendation(seed_tracks, track_attributes):
     return response_dict
 
 def get_recommended_tracks(predicted_track_attributes):
+    # SpotifyOAuth, use this code instead if try on local with key in.env
     # sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     #             client_id=os.getenv("CLIENT_ID"), 
     #             client_secret=os.getenv("CLIENT_SECRET")))
     
+    #AWS credential, comment out if running locally
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
                 client_id=aws_credentials.get_spotify_id(), 
                 client_secret=aws_credentials.get_spotify_secrets()))
@@ -355,7 +356,7 @@ def getTrackAttributes(tracks, batch_size):
     #             client_id=os.getenv("CLIENT_ID"), 
     #             client_secret=os.getenv("CLIENT_SECRET")))
     
-
+    #AWS credential, comment out if running locally
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
                 client_id=aws_credentials.get_spotify_id(), 
                 client_secret=aws_credentials.get_spotify_secrets()))
