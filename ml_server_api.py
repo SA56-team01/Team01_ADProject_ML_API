@@ -18,7 +18,7 @@ def index():
     return "Team 1 ML API"
 
 #routing call by Android with parameters
-@app.route('/predictTrackAttributes', methods=['GET'])
+@app.route('/predictTrackAttributes', methods=['GET','POST'])
 def predict_track_attributes():
 
     #get input from android call
@@ -26,7 +26,7 @@ def predict_track_attributes():
     currentLatitude = request.args.get('latitude',type=float)
     currentLongitude = request.args.get('longitude', type=float)
     currentTime = request.args.get('time')
-    top_tracks = request.args.get('top_tracks')
+    top_tracks = request.data
     
     cur_request = {
         'latitude':currentLatitude,
@@ -45,7 +45,6 @@ def predict_track_attributes():
     userhistory_df = pd.DataFrame(json_response)
     
     if len(userhistory_df) != 0: 
-        # print("The DataFrame is not empty.")
         userhistory_df = userhistory_df.drop(columns=['id','userId'])
 
         #get seed tracks 
@@ -94,7 +93,7 @@ def predict_track_attributes():
 
     return final_response
 
-#starting the server on any host
+# starting the server on any host
 if __name__ == '__main__':
     app.run(host='0.0.0.0',port=5001)
             
