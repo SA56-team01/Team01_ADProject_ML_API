@@ -317,10 +317,16 @@ def form_response(pred_track_attr, rec_track_list):
     
     #return final dict response
     pred_track_attr['playlist_songs'] = rec_track_list
+
+    # remove limit and market from final response
+    del pred_track_attr['limit']
+    del pred_track_attr['market']
     
     return pred_track_attr
 
-### SUPPLEMENTARY METHODS ###
+### 
+# SUPPLEMENTARY METHODS 
+# ###
 
 '''
 parse top tracks for seed_tracks
