@@ -26,8 +26,9 @@ def predict_track_attributes():
     currentLatitude = request.args.get('latitude',type=float)
     currentLongitude = request.args.get('longitude', type=float)
     currentTimestamp = request.args.get('timestamp')
-    top_tracks = request.form['top_tracks']
-    
+    data= request.data
+    top_tracks = data.decode('utf-8')   
+
     cur_request = {
         'latitude':currentLatitude,
         'longitude':currentLongitude,
@@ -36,32 +37,9 @@ def predict_track_attributes():
     request_df = pd.DataFrame(cur_request)
 
     #call backend to get user-history given userid
-    #userhistoryURL = os.getenv("USER_HISTORY_URL")
-    #response_result = get(userhistoryURL + userId)  
-    #json_response = json.loads(response_result.content)
-
-    if userId == '1' :
-        json_response = [
-            {
-            "id": 1,
-            "userId": 1,
-            "latitude": 1.2929946056154933,
-            "longitude": 103.77659642580656,
-            "spotifyTrackId": "2zDt2TfQbxiSPjTVJTgbwz",
-            "timestamp": "2023-08-15 15:35:49"
-            },
-            {
-            "id": 2,
-            "userId": 1,
-            "latitude": 1.2929946056154933,
-            "longitude": 103.77659642580656,
-            "spotifyTrackId": "2zDt2TfQbxiSPjTVJTgbwz",
-            "timestamp": "2023-08-15 15:35:49"
-            }   
-        ]
-    else :
-        json_response = []
-
+    userhistoryURL = os.getenv("USER_HISTORY_URL")
+    response_result = get(userhistoryURL + userId)  
+    json_response = json.loads(response_result.content)
 
     
     #prepare user-history as dataframe from API response
@@ -69,7 +47,7 @@ def predict_track_attributes():
     
     if len(userhistory_df) != 0: 
         print("Scenario 1")
-        userhistory_df = userhistory_df.drop(columns=['id','userId'])
+        userhistory_df = userhistory_df.drop(columns=['id','user'])
         
         #get seed tracks 
         seed_tracks = ml_model_api.get_seed_tracks(userhistory_df,currentTimestamp)
