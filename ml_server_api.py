@@ -26,8 +26,9 @@ def predict_track_attributes():
     currentLatitude = request.args.get('latitude',type=float)
     currentLongitude = request.args.get('longitude', type=float)
     currentTimestamp = request.args.get('timestamp')
-    top_tracks = request.data
-    
+    data= request.data
+    top_tracks = data.decode('utf-8')   
+
     cur_request = {
         'latitude':currentLatitude,
         'longitude':currentLongitude,
